@@ -1,9 +1,9 @@
-# Builds the deploy branch, Postiz plus Terminal Values' fixes, and
-# publishes it as ghcr.io/terminal-values/postiz-app, tagged sha-<commit>,
-# for post.libertyh.com. amd64 only: that is what it runs on. Upstream's
-# build-containers.yml is disabled in this fork, since it pushes to
-# gitroomhq's registry.
-name: terminal-values-image
+# Builds the deploy branch, Postiz plus Liberty Hall's fixes, and
+# publishes it as ghcr.io/liberty-hall/postiz-app, tagged sha-<commit>,
+# for post.libertyh.com. amd64 only: that is what it runs on. Don't push
+# tags to this fork: upstream's build-containers.yml runs on any tag and
+# would try to push to gitroomhq's registry.
+name: liberty-hall-image
 on:
   push:
     branches: [deploy]
@@ -29,7 +29,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/terminal-values/postiz-app
+          images: ghcr.io/liberty-hall/postiz-app
           tags: |
             type=sha,format=short,prefix=sha-
       - uses: docker/build-push-action@v6
