@@ -3,19 +3,25 @@ import { sourceLink } from '@gitroom/frontend/components/auth/source.link';
 // Liberty Hall's side of the login page, in libertyh.com's style: what this
 // install is, where to ask about using it, Postiz's own service, and (as the
 // AGPL asks) where the source of the running build is.
+//
+// Its files are public/lh-*: top level, since Postiz's middleware redirects
+// logged-out visitors from any nested path. IM Fell English and IM Fell
+// English SC are by Igino Marini, under the SIL Open Font License 1.1; the
+// tree and fleur engravings, from the English Illustrated Magazine (1891) and
+// Les Délices de Coblentz (1792), are in the public domain.
 const css = `
-@font-face{font-family:"IM Fell English";src:url(/liberty-hall/IMFellEnglish-Regular.woff2) format("woff2");font-display:swap}
-@font-face{font-family:"IM Fell English";font-style:italic;src:url(/liberty-hall/IMFellEnglish-Italic.woff2) format("woff2");font-display:swap}
-@font-face{font-family:"IM Fell English SC";src:url(/liberty-hall/IMFellEnglishSC-Regular.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"IM Fell English";src:url(/lh-IMFellEnglish-Regular.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"IM Fell English";font-style:italic;src:url(/lh-IMFellEnglish-Italic.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"IM Fell English SC";src:url(/lh-IMFellEnglishSC-Regular.woff2) format("woff2");font-display:swap}
 .lh{--paper:#f4efe4;--ink:#1d1b18;--red:#9e2a1f;--mute:#6f675b;
   background:var(--paper);color:var(--ink);color-scheme:light;
   font:19px/1.5 "IM Fell English",Georgia,"Times New Roman",serif;text-align:center}
 .lh .tree{width:min(240px,60vw);margin:0 auto;aspect-ratio:720/579;background:var(--ink);
-  -webkit-mask:url(/liberty-hall/tree.png) center/contain no-repeat;mask:url(/liberty-hall/tree.png) center/contain no-repeat}
+  -webkit-mask:url(/lh-tree.png) center/contain no-repeat;mask:url(/lh-tree.png) center/contain no-repeat}
 .lh h2{font:normal clamp(36px,6vw,48px)/1 "IM Fell English SC",Georgia,serif;margin:18px 0 0}
 .lh h2 span{color:var(--red)}
 .lh .fleur{width:26px;height:31px;margin:14px auto 0;background:var(--red);
-  -webkit-mask:url(/liberty-hall/fleur.png) center/contain no-repeat;mask:url(/liberty-hall/fleur.png) center/contain no-repeat}
+  -webkit-mask:url(/lh-fleur.png) center/contain no-repeat;mask:url(/lh-fleur.png) center/contain no-repeat}
 .lh .tag{margin:8px 0 0;font-style:italic;color:var(--mute)}
 .lh .body{max-width:30em;margin:28px auto 0;text-wrap:pretty}
 .lh .body p{margin:0 0 14px}
