@@ -576,7 +576,7 @@ export const LaunchesComponent = () => {
           return;
         }
 
-        const { url } = await (
+        const { url, err, msg } = await (
           await fetch(
             `/integrations/social/${integration.identifier}?refresh=${integration.internalId}`,
             {
@@ -584,6 +584,17 @@ export const LaunchesComponent = () => {
             }
           )
         ).json();
+        if (err || !url) {
+          toast.show(
+            msg ||
+              t(
+                'could_not_connect_to_platform',
+                'Could not connect to the platform'
+              ),
+            'warning'
+          );
+          return;
+        }
         window.location.href = url;
       },
     []

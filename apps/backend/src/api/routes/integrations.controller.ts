@@ -9,6 +9,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { ioRedis } from '@gitroom/nestjs-libraries/redis/redis.service';
+import { AuthService } from '@gitroom/helpers/auth/auth.service';
+import { InstanceInputError } from '@gitroom/nestjs-libraries/integrations/social/mastodon.instance';
 import { IntegrationManager } from '@gitroom/nestjs-libraries/integrations/integration.manager';
 import { IntegrationService } from '@gitroom/nestjs-libraries/database/prisma/integrations/integration.service';
 import { GetOrgFromRequest } from '@gitroom/nestjs-libraries/user/org.from.request';
@@ -243,11 +245,21 @@ export class IntegrationsController {
       migrateTo || integration
     );
 
-    if (integrationProvider.externalUrl && !externalUrl) {
-      throw new Error('Missing external url');
-    }
-
     try {
+      // Reconnecting a channel on a server the user named sends no address:
+      // reuse the one stored with the channel.
+      if (integrationProvider.externalUrl && !externalUrl && refresh) {
+        externalUrl = this.storedInstanceUrl(
+          await this._integrationService.getIntegrationByInternalId(
+            org.id,
+            refresh
+          )
+        );
+      }
+      if (integrationProvider.externalUrl && !externalUrl) {
+        throw new InstanceInputError('Type a server address or a handle');
+      }
+
       const getExternalUrl = integrationProvider.externalUrl
         ? {
             // The provider may resolve what was typed (a handle, say) to
@@ -283,7 +295,25 @@ export class IntegrationsController {
 
       return { url };
     } catch (err) {
-      return { err: true };
+      console.log(`connect ${integration} failed:`, err);
+      // Only messages written for the user; not network or SSRF-guard errors.
+      return err instanceof InstanceInputError
+        ? { err: true, msg: err.message }
+        : { err: true };
+    }
+  }
+
+  private storedInstanceUrl(
+    stored?: { customInstanceDetails?: string | null } | null
+  ): string {
+    try {
+      return (
+        JSON.parse(
+          AuthService.fixedDecryption(stored?.customInstanceDetails || '')
+        ).instanceUrl || ''
+      );
+    } catch {
+      return '';
     }
   }
 
