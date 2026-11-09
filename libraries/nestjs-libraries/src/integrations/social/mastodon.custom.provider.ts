@@ -8,24 +8,49 @@ import { makeSecureId } from '@gitroom/nestjs-libraries/services/make.secure.id'
 import { AuthService } from '@gitroom/helpers/auth/auth.service';
 import { getSsrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 import { Integration } from '@prisma/client';
+import {
+  MASTODON_CUSTOM_CALLBACK_PATH,
+  accountInternalId,
+  resolveInstanceUrl,
+  type FetchJson,
+} from '@gitroom/nestjs-libraries/integrations/social/mastodon.instance';
+
+// WebFinger and nodeinfo lookups on a server the user named: through the
+// SSRF guard, following redirects (servers with a separate web domain
+// redirect WebFinger to it), and rejecting anything but a JSON 2xx.
+const fetchJson: FetchJson = async (url) => {
+  const response = await fetch(url, {
+    headers: { accept: 'application/json' },
+    // @ts-ignore - undici-only option; blocks SSRF to internal IPs
+    dispatcher: getSsrfSafeDispatcher(),
+  });
+  if (!response.ok) {
+    throw new Error(`${url}: ${response.status}`);
+  }
+  return response.json();
+};
 
 export class MastodonCustomProvider extends MastodonProvider {
   override identifier = 'mastodon-custom';
-  override name = 'M. Instance';
+  override name = 'Mastodon';
+  toolTip =
+    'Any Mastodon-compatible server: type its address or your handle';
   override maxConcurrentJob = 5; // Custom Mastodon instances typically have generous limits
   editor = 'normal' as const;
 
-  async externalUrl(url: string) {
+  // `input` is what the user typed: a server address or a handle.
+  async externalUrl(input: string) {
+    const instanceUrl = await resolveInstanceUrl(input, fetchJson);
     const form = new FormData();
     form.append('client_name', 'Postiz');
     form.append(
       'redirect_uris',
-      `${process.env.FRONTEND_URL}/integrations/social/mastodon`
+      `${process.env.FRONTEND_URL}${MASTODON_CUSTOM_CALLBACK_PATH}`
     );
     form.append('scopes', this.scopes.join(' '));
     form.append('website', process.env.FRONTEND_URL!);
-    const { client_id, client_secret, ...all } = await (
-      await fetch(url + '/api/v1/apps', {
+    const { client_id, client_secret } = await (
+      await fetch(instanceUrl + '/api/v1/apps', {
         method: 'POST',
         body: form,
         // @ts-ignore - undici-only option; blocks SSRF to internal IPs
@@ -33,22 +58,26 @@ export class MastodonCustomProvider extends MastodonProvider {
       })
     ).json();
 
+    if (!client_id) {
+      throw new Error(`${instanceUrl} didn't register Postiz as an app`);
+    }
+
     return {
       client_id,
       client_secret,
+      instanceUrl,
     };
   }
-  override async generateAuthUrl(
-    refresh?: string,
-    external?: ClientInformation
-  ) {
+  // The controller passes the app it registered (externalUrl's result) as
+  // the only argument, as SocialProvider declares.
+  override async generateAuthUrl(external?: ClientInformation) {
     const state = makeSecureId(6);
     const url = this.generateUrlDynamic(
       external?.instanceUrl!,
       state,
       external?.client_id!,
       process.env.FRONTEND_URL!,
-      refresh
+      MASTODON_CUSTOM_CALLBACK_PATH
     );
 
     return {
@@ -66,12 +95,19 @@ export class MastodonCustomProvider extends MastodonProvider {
     },
     clientInformation?: ClientInformation
   ) {
-    return this.dynamicAuthenticate(
+    const auth = await this.dynamicAuthenticate(
       clientInformation?.client_id!,
       clientInformation?.client_secret!,
       clientInformation?.instanceUrl!,
-      params.code
+      params.code,
+      MASTODON_CUSTOM_CALLBACK_PATH
     );
+    // Posting never uses this id; it only keys the channel, and an account
+    // id alone repeats across servers.
+    return {
+      ...auth,
+      id: accountInternalId(String(auth.id), clientInformation?.instanceUrl!),
+    };
   }
 
   // The user's instance URL, saved encrypted at connection time. Falls back to

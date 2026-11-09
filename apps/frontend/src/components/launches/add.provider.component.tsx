@@ -121,7 +121,7 @@ export const UrlModal: FC<{
   }, []);
   return (
     <div className="rounded-[4px] border border-customColor6 bg-sixth px-[16px] pb-[16px] relative">
-      <TopTitle title={`Instance URL`} />
+      <TopTitle title={`Server`} />
       <button
         onClick={close}
         className="outline-none absolute end-[20px] top-[20px] mantine-UnstyledButton-root mantine-ActionIcon-root hover:bg-tableBorder cursor-pointer mantine-Modal-close mantine-1dcetaa"
@@ -148,7 +148,11 @@ export const UrlModal: FC<{
           onSubmit={methods.handleSubmit(submit)}
         >
           <div className="pt-[10px]">
-            <Input label="URL" name="url" />
+            <Input
+              label="Server address or your handle"
+              name="url"
+              placeholder="social.example.org or @you@example.org"
+            />
           </div>
           <div>
             <Button type="submit">{t('connect', 'Connect')}</Button>
@@ -488,13 +492,14 @@ export const AddProviderComponent: FC<{
           if (response.status === 402) {
             return;
           }
-          const { url, err } = await response.json();
+          const { url, err, msg } = await response.json();
           if (err) {
             toaster.show(
-              t(
-                'could_not_connect_to_platform',
-                'Could not connect to the platform'
-              ),
+              msg ||
+                t(
+                  'could_not_connect_to_platform',
+                  'Could not connect to the platform'
+                ),
               'warning'
             );
             return;
@@ -641,7 +646,7 @@ export const AddProviderComponent: FC<{
         }
         if (isExternal) {
           modal.openModal({
-            title: 'URL',
+            title: 'Server',
             withCloseButton: true,
             ...(isMobile ? { removeLayout: true, fullScreen: true } : {}),
             classNames: {
