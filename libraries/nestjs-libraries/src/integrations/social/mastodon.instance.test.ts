@@ -2,6 +2,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  InstanceInputError,
+  accountInternalId,
   parseInstanceInput,
   resolveInstanceUrl,
   type FetchJson,
@@ -58,7 +60,7 @@ test('rejects http, ports and ips', () => {
     '',
     'ftp://x.org',
   ]) {
-    assert.throws(() => parseInstanceInput(input), Error, input);
+    assert.throws(() => parseInstanceInput(input), InstanceInputError, input);
   }
 });
 
@@ -128,9 +130,23 @@ test('rejects a handle without webfinger', async () => {
   const { fetchJson, calls } = fake({});
   await assert.rejects(
     resolveInstanceUrl('x@nowhere.example', fetchJson),
-    /nowhere\.example/
+    (err: Error) =>
+      err instanceof InstanceInputError && /nowhere\.example/.test(err.message)
   );
   assert.deepEqual(calls, [
     'https://nowhere.example/.well-known/webfinger?resource=acct%3Ax%40nowhere.example',
   ]);
+});
+
+// Account ids are only unique on their own server (exodon's are 1, 2, ...),
+// and Postiz keys channels by (organization, internal id).
+test('account ids carry their server', () => {
+  assert.equal(
+    accountInternalId('1', 'https://social.libertyh.com'),
+    '1@social.libertyh.com'
+  );
+  assert.notEqual(
+    accountInternalId('1', 'https://social.libertyh.com'),
+    accountInternalId('1', 'https://social-test.endofgreatness.com')
+  );
 });

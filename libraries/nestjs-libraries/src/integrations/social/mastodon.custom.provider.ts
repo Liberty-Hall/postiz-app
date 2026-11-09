@@ -10,6 +10,7 @@ import { getSsrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/s
 import { Integration } from '@prisma/client';
 import {
   MASTODON_CUSTOM_CALLBACK_PATH,
+  accountInternalId,
   resolveInstanceUrl,
   type FetchJson,
 } from '@gitroom/nestjs-libraries/integrations/social/mastodon.instance';
@@ -94,13 +95,19 @@ export class MastodonCustomProvider extends MastodonProvider {
     },
     clientInformation?: ClientInformation
   ) {
-    return this.dynamicAuthenticate(
+    const auth = await this.dynamicAuthenticate(
       clientInformation?.client_id!,
       clientInformation?.client_secret!,
       clientInformation?.instanceUrl!,
       params.code,
       MASTODON_CUSTOM_CALLBACK_PATH
     );
+    // Posting never uses this id; it only keys the channel, and an account
+    // id alone repeats across servers.
+    return {
+      ...auth,
+      id: accountInternalId(String(auth.id), clientInformation?.instanceUrl!),
+    };
   }
 
   // The user's instance URL, saved encrypted at connection time. Falls back to

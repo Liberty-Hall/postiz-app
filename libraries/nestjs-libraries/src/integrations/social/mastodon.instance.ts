@@ -10,6 +10,19 @@
 export const MASTODON_CUSTOM_CALLBACK_PATH =
   '/integrations/social/mastodon-custom';
 
+// A problem with what the user typed, worded for them: the connect dialog
+// shows its message. Other errors (network, the SSRF guard) aren't shown.
+export class InstanceInputError extends Error {
+  override name = 'InstanceInputError';
+}
+
+// Postiz keys a channel by (organization, internal id), and an account id is
+// only unique on its own server (exodon numbers them 1, 2, ...), so the
+// channel's internal id carries the server too.
+export function accountInternalId(id: string, instanceUrl: string): string {
+  return `${id}@${new URL(instanceUrl).host}`;
+}
+
 export type InstanceInput =
   | { kind: 'host'; host: string }
   | { kind: 'handle'; user: string; domain: string };
@@ -23,7 +36,7 @@ const IPV4 = /^\d+(\.\d+){3}$/;
 
 function checkHost(host: string, input: string): string {
   if (!HOST.test(host) || IPV4.test(host)) {
-    throw new Error(
+    throw new InstanceInputError(
       `"${input}" isn't a server address or a handle like @you@example.org`
     );
   }
@@ -42,7 +55,7 @@ export function parseInstanceInput(input: string): InstanceInput {
   }
   const scheme = /^([a-z][a-z0-9+.-]*):\/\//i.exec(text);
   if (scheme && scheme[1].toLowerCase() !== 'https') {
-    throw new Error(`Only https:// servers can be connected, not "${input}"`);
+    throw new InstanceInputError(`Only https:// servers can be connected, not "${input}"`);
   }
   const host = text
     .replace(/^https:\/\//i, '')
@@ -87,7 +100,7 @@ export async function resolveInstanceUrl(
       found = undefined;
     }
     if (!found) {
-      throw new Error(
+      throw new InstanceInputError(
         `Couldn't find ${user}@${domain} by WebFinger on ${domain}`
       );
     }
