@@ -89,10 +89,11 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
     customUrl: string,
     state: string,
     clientId: string,
-    url: string
+    url: string,
+    callbackPath = '/integrations/social/mastodon'
   ) {
     return `${customUrl}/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(
-      `${url}/integrations/social/mastodon`
+      `${url}${callbackPath}`
     )}&scope=${this.scopes.join('+')}&state=${state}`;
   }
 
@@ -115,17 +116,15 @@ export class MastodonProvider extends SocialAbstract implements SocialProvider {
     clientId: string,
     clientSecret: string,
     url: string,
-    code: string
+    code: string,
+    callbackPath = '/integrations/social/mastodon'
   ) {
     const form = new FormData();
     form.append('client_id', clientId);
     form.append('client_secret', clientSecret);
     form.append('code', code);
     form.append('grant_type', 'authorization_code');
-    form.append(
-      'redirect_uri',
-      `${process.env.FRONTEND_URL}/integrations/social/mastodon`
-    );
+    form.append('redirect_uri', `${process.env.FRONTEND_URL}${callbackPath}`);
     form.append('scope', this.scopes.join(' '));
 
     const tokenInformation = await (

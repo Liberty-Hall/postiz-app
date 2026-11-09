@@ -250,8 +250,10 @@ export class IntegrationsController {
     try {
       const getExternalUrl = integrationProvider.externalUrl
         ? {
-            ...(await integrationProvider.externalUrl(externalUrl)),
+            // The provider may resolve what was typed (a handle, say) to
+            // the server's own address, which is what gets stored.
             instanceUrl: externalUrl,
+            ...(await integrationProvider.externalUrl(externalUrl)),
           }
         : undefined;
 

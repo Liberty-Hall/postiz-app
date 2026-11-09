@@ -226,9 +226,11 @@ export interface SocialProvider
   oneTimeToken?: boolean;
   isBetweenSteps: boolean;
   scopes: string[];
+  // instanceUrl, when given, replaces what the user typed as the stored
+  // server address.
   externalUrl?: (
     url: string
-  ) => Promise<{ client_id: string; client_secret: string }>;
+  ) => Promise<{ client_id: string; client_secret: string; instanceUrl?: string }>;
   mention?: (
     token: string,
     data: { query: string },
